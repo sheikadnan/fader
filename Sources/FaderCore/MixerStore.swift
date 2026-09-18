@@ -2,6 +2,7 @@ import AppKit
 import CoreAudio
 import Foundation
 import Observation
+import os
 
 /// The app's single source of truth.
 ///
@@ -47,6 +48,7 @@ public final class MixerStore {
 
     private let ownPID = ProcessInfo.processInfo.processIdentifier
     private let ownBundleID = Bundle.main.bundleIdentifier
+    private let log = Logger(subsystem: "com.fader.app", category: "store")
 
     public init(settingsStore: SettingsStore = SettingsStore()) {
         self.settingsStore = settingsStore
@@ -163,14 +165,18 @@ public final class MixerStore {
     private func rebuildRows() {
         var grouped: [String: (key: AppKey, name: String, icon: NSImage?, playing: Bool, count: Int, processIDs: [AudioObjectID])] = [:]
 
+        let ownKey = ownBundleID.map { AppKey(bundleID: $0).rawValue }
+
         for process in processes {
-            guard process.pid != ownPID, process.bundleID != ownBundleID else { continue }
+            guard process.pid != ownPID else { continue }
+            if let ownKey, process.key.rawValue == ownKey { continue }
+
             let key = process.key
             let existing = grouped[key.rawValue]
             grouped[key.rawValue] = (
                 key: key,
-                name: existing?.name ?? AppInfo.displayName(pid: process.pid, bundleID: process.bundleID),
-                icon: existing?.icon ?? AppInfo.icon(pid: process.pid),
+                name: existing?.name ?? process.displayName,
+                icon: existing?.icon ?? AppInfo.icon(pid: process.ownerPID ?? process.pid),
                 playing: (existing?.playing ?? false) || process.isRunningOutput,
                 count: (existing?.count ?? 0) + 1,
                 processIDs: (existing?.processIDs ?? []) + [process.objectID]
@@ -219,8 +225,22 @@ public final class MixerStore {
 
         rows = built
         outputDeviceName = AudioDevices.name(AudioDevices.defaultOutputID) ?? "Unknown"
+        reportRows()
         rememberNames()
         reconcile()
+    }
+
+    /// "My app is not in the list" is the question this app will be asked most,
+    /// so the list it actually built is recorded rather than guessed at.
+    private func reportRows() {
+        guard !rows.isEmpty else {
+            log.info("rows: none")
+            return
+        }
+        let summary = rows
+            .map { "\($0.name)\($0.isPlaying ? "*" : "")(\($0.processCount))" }
+            .joined(separator: ", ")
+        log.info("rows(\(self.rows.count)): \(summary, privacy: .public)")
     }
 
     private func rememberNames() {

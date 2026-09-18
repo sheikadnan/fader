@@ -31,6 +31,43 @@ heading("Fader probe")
 value("macOS", ProcessInfo.processInfo.operatingSystemVersionString)
 value("Fader bundle", Bundle.main.bundleIdentifier ?? "—")
 
+// MARK: Watch mode
+//
+// Answers "why is my app not in the list?" by printing every change the catalog
+// reports, live. Start this, then start playing audio.
+if arguments.contains("--watch") {
+    let seconds = 25.0
+    heading("Watching audio processes for \(Int(seconds))s — start playing something now")
+    var lastCount = -1
+    let catalog = ProcessCatalog()
+    catalog.onChange = { list in
+        let audible = list.filter(\.isRunningOutput)
+        let stamp = String(format: "%.1f", Date().timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 100_000))
+        print("[\(stamp)] change: \(list.count) processes, \(audible.count) producing audio")
+        for process in audible {
+            let name = process.displayName
+            let bundle = process.bundleID ?? "(no bundle id)"
+            let path = process.executablePath ?? "(no path)"
+            print("    object \(process.objectID)  pid \(process.pid)  \(name)")
+            print("      bundle: \(bundle)")
+            print("      exec:   \(path)")
+        }
+        print("    all processes:")
+        for process in list {
+            let name = process.displayName
+            let mark = process.isRunningOutput ? "▶" : " "
+            print("    \(mark) object \(process.objectID)  pid \(process.pid)  \(name)  [\(process.bundleID ?? "nil")]")
+        }
+        lastCount = audible.count
+    }
+    catalog.start()
+    Thread.sleep(forTimeInterval: seconds)
+    catalog.stop()
+    heading("Done")
+    print("  Last observed audible process count: \(lastCount)\n")
+    exit(0)
+}
+
 // MARK: Output device
 
 heading("Default output device")
@@ -57,7 +94,7 @@ let audible = processes.filter(\.isRunningOutput)
 
 heading("Audio processes (\(processes.count) total, \(audible.count) producing audio)")
 for process in audible.prefix(20) {
-    let name = AppInfo.displayName(pid: process.pid, bundleID: process.bundleID)
+    let name = process.displayName
     value(name, "pid \(process.pid)  \(process.bundleID ?? "no bundle id")")
 }
 if audible.isEmpty {
@@ -80,7 +117,7 @@ guard !targets.isEmpty else {
 
 var taps: [(process: AudioProcess, id: AudioObjectID, uid: String)] = []
 for process in targets {
-    let name = AppInfo.displayName(pid: process.pid, bundleID: process.bundleID)
+    let name = process.displayName
     let description = CATapDescription(stereoMixdownOfProcesses: [process.objectID])
     description.name = "Fader probe — \(name)"
     description.isPrivate = true

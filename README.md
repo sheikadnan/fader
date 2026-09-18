@@ -168,6 +168,20 @@ The probe changes nothing unless you pass `--run`, and it always destroys its
 taps on the way out. It reports the raw `OSStatus` of every step, so a failed
 tap says why.
 
+### An app is missing from the list
+
+Fader lists what is *playing*. Apps are identified by the app you launched, not
+by the helper process that does the decoding — Chrome playing YouTube shows as
+**Google Chrome**, not `Google Chrome Helper`, and one volume setting covers all
+of its processes.
+
+To see exactly what Fader built, and why:
+
+```sh
+/usr/bin/log show --last 5m --info --predicate 'subsystem == "com.fader.app"' | grep "rows"
+swift run fader-probe --watch    # live view of every process the HAL reports
+```
+
 ### The menu bar icon
 
 Fader has no Dock icon and no window, so the menu bar item is the whole user

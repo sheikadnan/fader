@@ -98,19 +98,26 @@ public final class ProcessCatalog {
             AudioObjectID.self
         )
 
+        let resolver = AppInfo.Resolver()
+
         return objectIDs.compactMap { objectID in
             let pid: pid_t = HAL.get(objectID, HAL.address(kAudioProcessPropertyPID), default: pid_t(0))
             guard pid > 0 else { return nil }
 
             let running = HAL.get(objectID, HAL.address(kAudioProcessPropertyIsRunningOutput), default: UInt32(0)) != 0
             let bundleID = HAL.string(objectID, HAL.address(kAudioProcessPropertyBundleID))
+            let path = AppInfo.executablePath(pid: pid)
+            let owner = resolver.owner(pid: pid, executablePath: path)
 
             return AudioProcess(
                 objectID: objectID,
                 pid: pid,
                 bundleID: bundleID,
+                executablePath: path,
                 isRunningOutput: running,
-                executablePath: AppInfo.executablePath(pid: pid)
+                ownerPID: owner?.processIdentifier,
+                ownerBundleID: owner?.bundleIdentifier,
+                ownerName: owner?.localizedName
             )
         }
     }
