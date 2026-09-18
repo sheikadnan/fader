@@ -168,6 +168,23 @@ The probe changes nothing unless you pass `--run`, and it always destroys its
 taps on the way out. It reports the raw `OSStatus` of every step, so a failed
 tap says why.
 
+### The menu bar icon
+
+Fader has no Dock icon and no window, so the menu bar item is the whole user
+interface. It sits on the right-hand side of the menu bar and looks like three
+vertical sliders. If you cannot see it:
+
+- Check the app is running: `pgrep -x Fader`
+- Menu bar space is finite, and macOS hides overflow items silently. Quit
+  something else from the menu bar and it will reappear.
+- Ask the app where it put the item:
+
+  ```sh
+  /usr/bin/log show --last 5m --info --predicate 'subsystem == "com.fader.app"' | grep "status item"
+  ```
+
+  That prints the item's frame and whether it is visible on screen.
+
 Known limitations:
 
 - **Apps routed to a non-default output device are left alone.** Fader mixes
