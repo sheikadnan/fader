@@ -30,12 +30,6 @@ public final class MixerStore {
     public private(set) var outputDeviceName = "Unknown"
     public private(set) var problems: [String] = []
 
-    /// When false, the list shows what is playing, what you pinned, and what you
-    /// adjusted — not every process on the machine that can make sound.
-    public var showsAllApps = false {
-        didSet { rebuildRows() }
-    }
-
     private let catalog = ProcessCatalog()
     private let engine = MixerEngine()
     private let settingsStore: SettingsStore
@@ -189,7 +183,9 @@ public final class MixerStore {
         for (id, entry) in grouped {
             let settings = state.apps[id] ?? .unity
             let pinned = state.pinned.contains(id)
-            guard showsAllApps || entry.playing || pinned || !settings.isPassthrough else { continue }
+            // Playing, pinned, or already adjusted. Nothing else: a list of
+            // every process on the machine that can make sound is noise.
+            guard entry.playing || pinned || !settings.isPassthrough else { continue }
             built.append(Row(
                 id: id,
                 key: entry.key,

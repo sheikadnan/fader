@@ -32,13 +32,6 @@ struct MixerView: View {
                     .truncationMode(.middle)
             }
             Spacer()
-            Toggle("All", isOn: Binding(
-                get: { store.showsAllApps },
-                set: { store.showsAllApps = $0 }
-            ))
-            .toggleStyle(.switch)
-            .controlSize(.mini)
-            .help("Show every audio process, not just the ones playing")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)

@@ -51,8 +51,10 @@ slider and a mute button.
 - **Adjust a slider** and that app's volume changes immediately.
 - **Mute** silences one app without touching anything else.
 - **Right-click a row** to pin an app to the top of the list, or reset it.
-- **"All" toggle** shows every audio process on the machine, not just the ones
-  playing.
+
+The list shows apps that are playing, apps you pinned, and apps you have already
+adjusted. Nothing else — a list of everything on the machine that can make sound
+is noise.
 
 Settings are stored per app and survive relaunches. The first time you move a
 slider, macOS asks for permission to read audio — see below.
